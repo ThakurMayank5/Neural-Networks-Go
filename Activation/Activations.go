@@ -1,31 +1,42 @@
 package activation
 
-import "math"
+import (
+	"math"
+)
 
-func GetActivationFunction(name string) func(float64) float64 {
+// ActivationFunction represents the type of activation function
+type ActivationFunction string
+
+const (
+	ReLU    ActivationFunction = "relu"
+	Sigmoid ActivationFunction = "sigmoid"
+	Tanh    ActivationFunction = "tanh"
+)
+
+func GetActivationFunction(name ActivationFunction) func(float64) float64 {
 	switch name {
-	case "relu":
-		return ReLU
-	case "sigmoid":
-		return Sigmoid
-	case "tanh":
-		return Tanh
+	case ReLU:
+		return reluFunc
+	case Sigmoid:
+		return sigmoidFunc
+	case Tanh:
+		return tanhFunc
 	default:
 		return nil
 	}
 }
 
-func ReLU(x float64) float64 {
+func reluFunc(x float64) float64 {
 	if x > 0 {
 		return x
 	}
 	return 0
 }
 
-func Sigmoid(x float64) float64 {
+func sigmoidFunc(x float64) float64 {
 	return 1 / (1 + math.Exp(-x))
 }
 
-func Tanh(x float64) float64 {
+func tanhFunc(x float64) float64 {
 	return math.Tanh(x)
 }

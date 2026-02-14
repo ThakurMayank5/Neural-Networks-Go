@@ -3,7 +3,8 @@ package neuralnetwork
 import (
 	"fmt"
 
-	vectors "github.com/ThakurMayank5/Neural-Networks-Go/Vectors"
+	"github.com/ThakurMayank5/Neural-Networks-Go/activation"
+	vectors "github.com/ThakurMayank5/Neural-Networks-Go/vectors"
 )
 
 func (nn *NeuralNetwork) Predict(input []float64) ([]float64, error) {
@@ -20,6 +21,14 @@ func (nn *NeuralNetwork) Predict(input []float64) ([]float64, error) {
 
 	for i := range len(weights) {
 
+		activationFunction := activation.ReLU
+
+		if i == len(weights)-1 {
+			activationFunction = nn.OutputLayer.ActivationFunction
+		} else {
+			activationFunction = nn.Layers[i].ActivationFunction
+		}
+
 		newX := make([]float64, len(biases[i])) // Initialized elements as 0
 
 		for j := 0; j < len(biases[i]); j++ {
@@ -29,7 +38,10 @@ func (nn *NeuralNetwork) Predict(input []float64) ([]float64, error) {
 				fmt.Println("Error computing dot product:", err)
 				return nil, err
 			}
-			newX[j] = dotProduct + biases[i][j]
+
+			activationFunctionToUse := activation.GetActivationFunction(activationFunction)
+
+			newX[j] = activationFunctionToUse(dotProduct + biases[i][j])
 		}
 
 		x = newX

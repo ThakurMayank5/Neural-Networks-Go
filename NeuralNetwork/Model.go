@@ -2,15 +2,8 @@ package neuralnetwork
 
 import (
 	"fmt"
-)
 
-// ActivationFunction represents the type of activation function
-type ActivationFunction string
-
-const (
-	ReLU    ActivationFunction = "relu"
-	Sigmoid ActivationFunction = "sigmoid"
-	Tanh    ActivationFunction = "tanh"
+	activation "github.com/ThakurMayank5/Neural-Networks-Go/activation"
 )
 
 // Optimizer represents the optimization algorithm
@@ -32,13 +25,13 @@ const (
 // InputLayer represents the input layer configuration
 type InputLayer struct {
 	Neurons            int
-	ActivationFunction ActivationFunction
+	ActivationFunction activation.ActivationFunction
 }
 
 // OutputLayer represents the output layer configuration
 type OutputLayer struct {
 	Neurons            int
-	ActivationFunction ActivationFunction
+	ActivationFunction activation.ActivationFunction
 	Initialization     Initialization
 }
 
@@ -67,7 +60,7 @@ type ModelWeightsAndBiases struct {
 // Layer represents a hidden layer
 type Layer struct {
 	Neurons            int
-	ActivationFunction ActivationFunction
+	ActivationFunction activation.ActivationFunction
 	Initialization     Initialization
 }
 

@@ -120,6 +120,62 @@ func LoadCSVWithOneHot(path string, inputSize int, numClasses int) (Dataset, err
 	}, nil
 }
 
+// LoadMNISTCSV loads MNIST CSV format where label is in the first column
+func LoadMNISTCSV(path string) (Dataset, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return Dataset{}, err
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+
+	records, err := reader.ReadAll()
+	if err != nil {
+		return Dataset{}, err
+	}
+
+	var inputs [][]float64
+	var outputs [][]float64
+
+	// Skip header → start from index 1
+	for i := 1; i < len(records); i++ {
+		row := records[i]
+
+		// First column is the label (0-9)
+		classLabel, err := strconv.ParseFloat(row[0], 64)
+		if err != nil {
+			return Dataset{}, err
+		}
+
+		// Convert label to one-hot encoding (10 classes: 0-9)
+		classIndex := int(classLabel)
+		oneHot := make([]float64, 10)
+		if classIndex >= 0 && classIndex < 10 {
+			oneHot[classIndex] = 1.0
+		}
+
+		// Remaining 784 columns are pixel values
+		var input []float64
+		for j := 1; j < len(row); j++ {
+			val, err := strconv.ParseFloat(row[j], 64)
+			if err != nil {
+				return Dataset{}, err
+			}
+			// Normalize pixel values from [0, 255] to [0, 1]
+			input = append(input, val/255.0)
+		}
+
+		inputs = append(inputs, input)
+		outputs = append(outputs, oneHot)
+	}
+
+	return Dataset{
+		Inputs:  inputs,
+		Outputs: outputs,
+	}, nil
+}
+
 // NormalizeInputs normalizes the input features using min-max scaling to [0, 1]
 func (d *Dataset) NormalizeInputs() {
 	if len(d.Inputs) == 0 || len(d.Inputs[0]) == 0 {

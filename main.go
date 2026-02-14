@@ -13,47 +13,39 @@ func main() {
 	model := nn.Model{
 		NeuralNetwork: nn.NeuralNetwork{
 			InputLayer: nn.InputLayer{
-				Neurons:            13, // Wine dataset has 13 features
+				Neurons:            784, // MNIST images are 28x28 = 784 pixels
 				ActivationFunction: activ.ReLU,
 			},
 			OutputLayer: nn.OutputLayer{
-				Neurons:            3, // 3 wine classes
+				Neurons:            10, // 10 digit classes (0-9)
 				ActivationFunction: activ.Softmax,
 				Initialization:     nn.KaimingNormalInitializer,
 			},
 		},
 		TrainingConfig: nn.TrainingConfig{
-			Epochs:          100,
-			LearningRate:    0.01,
+			Epochs:          20,   // More epochs for gradual learning
+			LearningRate:    0.01, // Lower rate to prevent divergence
 			Optimizer:       "sgd",
 			LossFunction:    "categorical_crossentropy",
-			BatchSize:       32,
+			BatchSize:       64,
 			ValidationSplit: 0.2,
 		},
 	}
 
-	// Optimal architecture for Wine dataset (13 features)
+	// Neural network architecture for MNIST
 	model.NeuralNetwork.AddLayer(nn.Layer{
-		Neurons:            128, // Larger first layer for more features
-		ActivationFunction: activ.ReLU,
-		Initialization:     nn.KaimingNormalInitializer,
+		Neurons:            128,
+		ActivationFunction: activ.Sigmoid,
+		Initialization:     nn.XavierNormalInitializer,
 	})
 
 	model.NeuralNetwork.AddLayer(nn.Layer{
 		Neurons:            64,
-		ActivationFunction: activ.ReLU,
-		Initialization:     nn.KaimingNormalInitializer,
-	})
-
-	model.NeuralNetwork.AddLayer(nn.Layer{
-		Neurons:            32,
-		ActivationFunction: activ.ReLU,
-		Initialization:     nn.KaimingNormalInitializer,
+		ActivationFunction: activ.Sigmoid,
+		Initialization:     nn.XavierNormalInitializer,
 	})
 
 	model.NeuralNetwork.Summary()
-
-	model.TrainingConfig.Epochs = 200
 
 	err := model.InitializeWeights()
 
@@ -61,14 +53,16 @@ func main() {
 		fmt.Println("Error initializing weights:", err)
 	}
 
-	dataset, err := neuralnetwork.LoadCSVWithOneHot("data.csv", 13, 3)
+	dataset, err := neuralnetwork.LoadMNISTCSV("data.csv")
 	if err != nil {
 		panic(err)
 	}
 
-	// Normalize the dataset for better training
-	dataset.NormalizeInputs()
-	fmt.Printf("Wine dataset loaded: %d samples with 13 features, normalized!\n", len(dataset.Inputs))
+	// Training on full MNIST dataset (60,000 samples)
+	// Previously used subset for testing: subsetSize := 5000
+
+	fmt.Printf("MNIST dataset loaded: %d samples with 784 features (28x28 pixels)!\n", len(dataset.Inputs))
+	fmt.Println("Pixel values already normalized to [0, 1]")
 
 	err = model.SGDFitWithEpochs(dataset)
 
@@ -79,11 +73,11 @@ func main() {
 	}
 
 	// Show predictions from different parts of dataset
-	fmt.Println("\n--- Sample Predictions (First 5 of each class) ---")
+	fmt.Println("\n--- Sample Predictions (First 3 of each digit) ---")
 	classCounts := make(map[int]int)
-	samplesPerClass := 5
+	samplesPerClass := 3
 
-	for i := 0; i < len(dataset.Inputs) && len(classCounts) < 3; i++ {
+	for i := 0; i < len(dataset.Inputs) && len(classCounts) < 10; i++ {
 		// Find actual class
 		actualIdx := 0
 		for j := 1; j < len(dataset.Outputs[i]); j++ {
@@ -111,7 +105,7 @@ func main() {
 				match = "✗"
 			}
 
-			fmt.Printf("Sample %d: Predicted Class %d (%.4f) | Actual Class %d %s\n",
+			fmt.Printf("Sample %d: Predicted Digit %d (%.4f) | Actual Digit %d %s\n",
 				i+1, maxIdx, prediction[maxIdx], actualIdx, match)
 			classCounts[actualIdx]++
 		}

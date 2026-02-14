@@ -67,13 +67,13 @@ func main() {
 		fmt.Println("Error initializing weights:", err)
 	}
 
-	// err := model.Fit(nn.Dataset{
-	// 	Inputs:  [][]float64{{1, 0, 0}, {0, 0, 1}, {0, 1, 0}, {1, 0, 0}},
-	// 	Outputs: [][]float64{{0}, {1}, {1}, {1}},
-	// })
-	// if err != nil {
-	// 	fmt.Println("Training completed with error:", err)
-	// } else {
-	// 	fmt.Println("Training completed successfully.")
-	// }
+	err = model.SGDFit(nn.Dataset{
+		Inputs:  [][]float64{{1, 0, 0}, {0, 0, 1}, {0, 1, 0}, {1, 0, 0}},
+		Outputs: [][]float64{{0}, {1}, {1}, {1}},
+	})
+	if err != nil {
+		fmt.Println("Training completed with error:", err)
+	} else {
+		fmt.Println("Training completed successfully.")
+	}
 }

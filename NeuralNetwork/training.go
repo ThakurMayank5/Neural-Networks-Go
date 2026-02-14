@@ -1,6 +1,10 @@
 package neuralnetwork
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/ThakurMayank5/Neural-Networks-Go/losses"
+)
 
 // Fit trains the model on the provided dataset
 
@@ -45,7 +49,18 @@ func (model *Model) SGDFit(dataset Dataset) error {
 			return err
 
 		}
+
 		fmt.Printf("Input: %v, Predicted Output: %v\n", input, output)
+
+		// Compute loss
+		loss, err := losses.MeanSquaredError(dataset.Outputs[i], output)
+		if err != nil {
+			fmt.Printf("Error computing loss for input %v: %v\n", input, err)
+			return err
+		}
+
+		fmt.Printf("Loss: %v\n", loss)
+
 	}
 
 	return nil

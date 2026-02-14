@@ -120,7 +120,6 @@ func (nn *NeuralNetwork) Summary() {
 
 }
 
-
 // InitializeWeights initializes the model weights and biases
 func (model *Model) InitializeWeights() error {
 

@@ -3,23 +3,24 @@ package main
 import (
 	"fmt"
 
-	"github.com/ThakurMayank5/Neural-Networks-Go/NeuralNetwork"
+	nn "github.com/ThakurMayank5/Neural-Networks-Go/neuralnetwork"
 )
 
 func main() {
 
-	model := NeuralNetwork.Model{
-		NeuralNetwork: NeuralNetwork.NeuralNetwork{
-			InputLayer: NeuralNetwork.InputLayer{
+	model := nn.Model{
+		NeuralNetwork: nn.NeuralNetwork{
+			InputLayer: nn.InputLayer{
 				Neurons:            3,
-				ActivationFunction: "relu",
+				ActivationFunction: nn.ReLU,
 			},
-			OutputLayer: NeuralNetwork.OutputLayer{
+			OutputLayer: nn.OutputLayer{
 				Neurons:            1,
-				ActivationFunction: "sigmoid",
+				ActivationFunction: nn.Sigmoid,
+				Initialization:     nn.KaimingNormalInitializer,
 			},
 		},
-		TrainingConfig: NeuralNetwork.TrainingConfig{
+		TrainingConfig: nn.TrainingConfig{
 			Epochs:          100,
 			LearningRate:    0.01,
 			Optimizer:       "adam",
@@ -29,14 +30,16 @@ func main() {
 		},
 	}
 
-	model.NeuralNetwork.AddLayer(NeuralNetwork.Layer{
+	model.NeuralNetwork.AddLayer(nn.Layer{
 		Neurons:            5,
-		ActivationFunction: NeuralNetwork.ReLU,
+		ActivationFunction: nn.ReLU,
+		Initialization:     nn.KaimingNormalInitializer,
 	})
 
-	model.NeuralNetwork.AddLayer(NeuralNetwork.Layer{
+	model.NeuralNetwork.AddLayer(nn.Layer{
 		Neurons:            4,
-		ActivationFunction: NeuralNetwork.ReLU,
+		ActivationFunction: nn.ReLU,
+		Initialization:     nn.KaimingNormalInitializer,
 	})
 
 	model.NeuralNetwork.Summary()
@@ -58,13 +61,19 @@ func main() {
 
 	*/
 
-	err := model.Fit(NeuralNetwork.Dataset{
-		Inputs:  [][]float64{{1, 0, 0}, {0, 0, 1}, {0, 1, 0}, {1, 0, 0}},
-		Outputs: [][]float64{{0}, {1}, {1}, {1}},
-	})
+	err := model.InitializeWeights()
+
 	if err != nil {
-		fmt.Println("Training completed with error:", err)
-	} else {
-		fmt.Println("Training completed successfully.")
+		fmt.Println("Error initializing weights:", err)
 	}
+
+	// err := model.Fit(nn.Dataset{
+	// 	Inputs:  [][]float64{{1, 0, 0}, {0, 0, 1}, {0, 1, 0}, {1, 0, 0}},
+	// 	Outputs: [][]float64{{0}, {1}, {1}, {1}},
+	// })
+	// if err != nil {
+	// 	fmt.Println("Training completed with error:", err)
+	// } else {
+	// 	fmt.Println("Training completed successfully.")
+	// }
 }

@@ -1,11 +1,12 @@
-package NeuralNetwork
+package neuralnetwork
 
 import (
 	"fmt"
-	// "github.com/ThakurMayank5/Neural-Networks-Go/Activation"
-	"github.com/ThakurMayank5/Neural-Networks-Go/Vectors"
+
+	"github.com/ThakurMayank5/Neural-Networks-Go/vectors"
 )
 
+// ActivationFunction represents the type of activation function
 type ActivationFunction string
 
 const (
@@ -14,25 +15,42 @@ const (
 	Tanh    ActivationFunction = "tanh"
 )
 
+// Optimizer represents the optimization algorithm
 type Optimizer string
 
+// LossFunction represents the loss function
 type LossFunction string
 
+// Initialization represents weight initialization strategy
+type Initialization string
+
+const (
+	XavierUniformInitializer  Initialization = "xavier_uniform"
+	XavierNormalInitializer   Initialization = "xavier_normal"
+	KaimingUniformInitializer Initialization = "kaiming_uniform"
+	KaimingNormalInitializer  Initialization = "kaiming_normal"
+)
+
+// InputLayer represents the input layer configuration
 type InputLayer struct {
 	Neurons            int
 	ActivationFunction ActivationFunction
 }
 
+// OutputLayer represents the output layer configuration
 type OutputLayer struct {
 	Neurons            int
 	ActivationFunction ActivationFunction
+	Initialization     Initialization
 }
 
+// Dataset represents training data
 type Dataset struct {
 	Inputs  [][]float64
 	Outputs [][]float64
 }
 
+// TrainingConfig represents training hyperparameters
 type TrainingConfig struct {
 	Epochs          int
 	LearningRate    float64
@@ -42,41 +60,49 @@ type TrainingConfig struct {
 	ValidationSplit float64
 }
 
-type Model struct {
-	NeuralNetwork  NeuralNetwork
-	TrainingConfig TrainingConfig
-}
-
-type NeuralNetwork struct {
-	InputLayer InputLayer
-
-	Layers []Layer
-
-	OutputLayer OutputLayer
-}
-
+// ModelWeightsAndBiases stores the model parameters
 type ModelWeightsAndBiases struct {
 	Weights [][]float64
 	Biases  [][]float64
 }
 
+// Layer represents a hidden layer
 type Layer struct {
 	Neurons            int
 	ActivationFunction ActivationFunction
+	Initialization     Initialization
 }
 
+// NeuralNetwork represents the neural network architecture
+type NeuralNetwork struct {
+	InputLayer       InputLayer
+	Layers           []Layer
+	OutputLayer      OutputLayer
+	WeightsAndBiases ModelWeightsAndBiases
+}
+
+// Model represents the complete model with network and training config
+type Model struct {
+	NeuralNetwork  NeuralNetwork
+	TrainingConfig TrainingConfig
+}
+
+// AddLayer adds a hidden layer to the neural network
 func (nn *NeuralNetwork) AddLayer(layer Layer) {
 	nn.Layers = append(nn.Layers, layer)
 }
 
+// SetOutputLayer sets the output layer configuration
 func (nn *NeuralNetwork) SetOutputLayer(layer OutputLayer) {
 	nn.OutputLayer = layer
 }
 
+// SetInputLayer sets the input layer configuration
 func (nn *NeuralNetwork) SetInputLayer(layer InputLayer) {
 	nn.InputLayer = layer
 }
 
+// Predict performs forward propagation
 func (nn *NeuralNetwork) Predict(input []float64, weightsAndBiases ModelWeightsAndBiases) ([]float64, error) {
 
 	println("Predicting...")
@@ -93,10 +119,7 @@ func (nn *NeuralNetwork) Predict(input []float64, weightsAndBiases ModelWeightsA
 
 		newX := make([]float64, nn.Layers[i].Neurons) // Initialized elements as 0
 
-		/**
-		Processing Layer 1
-
-		*/
+		// Processing Layer 1
 		if i == 0 {
 			println("New X", newX)
 
@@ -114,47 +137,49 @@ func (nn *NeuralNetwork) Predict(input []float64, weightsAndBiases ModelWeightsA
 				return nil, fmt.Errorf("weights and biases are not initialized")
 			}
 
-			
 			for j := 0; j < nn.Layers[i].Neurons; j++ {
 				currWeights := weights[i][j*len(x) : (j+1)*len(x)]
-				dotProduct, err := Vectors.DotProduct(x, currWeights)
+				dotProduct, err := vectors.DotProduct(x, currWeights)
 
-				// testting weights
+				println(dotProduct)
+
+				// testing weights
 				fmt.Printf("Layer %d, Neuron %d, Weights: %v\n", i+1, j+1, currWeights)
 
-			if err != nil {
-				fmt.Println("Error computing dot product:", err)
-				return nil, err
+				if err != nil {
+					fmt.Println("Error computing dot product:", err)
+					return nil, err
+				}
+
+				continue
 			}
 
-			continue
-		}
+			println("Processing Layer", i+1)
 
-		println("Processing Layer", i+1)
-
-		println("Input length:", len(x))
-		println("Layer neurons", nn.Layers[i].Neurons)
-
-		println(len(weights[i]), nn.Layers[i].Neurons*len(x))
-
-		if len(weights) == 0 || len(biases) == 0 {
-			fmt.Println("Weights and biases are not initialized.")
-			return nil, fmt.Errorf("weights and biases are not initialized")
-		}
-
-		if len(weights[i]) != len(x)*nn.Layers[i].Neurons && i != len(nn.Layers) {
-
-			println("Weights:", len(weights[i]))
 			println("Input length:", len(x))
+			println("Layer neurons", nn.Layers[i].Neurons)
 
-			fmt.Println("Mismatch in weights length.")
-			return nil, fmt.Errorf("mismatch in weights length")
+			println(len(weights[i]), nn.Layers[i].Neurons*len(x))
+
+			if len(weights) == 0 || len(biases) == 0 {
+				fmt.Println("Weights and biases are not initialized.")
+				return nil, fmt.Errorf("weights and biases are not initialized")
+			}
+
+			if len(weights[i]) != len(x)*nn.Layers[i].Neurons && i != len(nn.Layers) {
+
+				println("Weights:", len(weights[i]))
+				println("Input length:", len(x))
+
+				fmt.Println("Mismatch in weights length.")
+				return nil, fmt.Errorf("mismatch in weights length")
+			}
 		}
 	}
-
 	return x, nil
 }
 
+// Summary prints the neural network architecture
 func (nn *NeuralNetwork) Summary() {
 
 	TotalLayers := len(nn.Layers) + 2 // Input and Output layers
@@ -174,6 +199,7 @@ func (nn *NeuralNetwork) Summary() {
 
 }
 
+// Fit trains the model on the provided dataset
 func (model *Model) Fit(dataset Dataset) error {
 
 	// Dataset validation
@@ -248,7 +274,7 @@ func (model *Model) Fit(dataset Dataset) error {
 	// Testing the weights and biases initialization
 	for i := range weights {
 		for j := range weights[i] {
-			weights[i][j] = 0.01*float64(i+j) // Example initialization
+			weights[i][j] = 0.01 * float64(i+j) // Example initialization
 		}
 	}
 
@@ -281,6 +307,54 @@ func (model *Model) Fit(dataset Dataset) error {
 
 	return nil
 
+}
+
+// InitializeWeights initializes the model weights and biases
+func (model *Model) InitializeWeights() error {
+
+	totalLayers := len(model.NeuralNetwork.Layers) + 2 // Input and Output layers
+
+	totalTrainableLayers := totalLayers - 1 // Exclude input layer
+
+	biases := make([][]float64, totalTrainableLayers)
+
+	for i := range biases {
+		if i == totalTrainableLayers-1 {
+
+			biases[i] = make([]float64, model.NeuralNetwork.OutputLayer.Neurons)
+			continue
+		}
+		biases[i] = make([]float64, model.NeuralNetwork.Layers[i].Neurons)
+	}
+
+	// Bias initialization
+	for i := range biases {
+		for j := range biases[i] {
+			biases[i][j] = 0.0
+		}
+	}
+
+	model.NeuralNetwork.WeightsAndBiases.Biases = biases
+
+	// Initialize weights using Kaiming Normal initialization
+	err := KaimingNormal(&model.NeuralNetwork)
+	if err != nil {
+		return err
+	}
+
+	println("Weights:", model.NeuralNetwork.WeightsAndBiases.Weights)
+
+	// print shape of weights
+	for i := range model.NeuralNetwork.WeightsAndBiases.Weights {
+		fmt.Printf("Weights for Layer %d: %d\n", i+1, len(model.NeuralNetwork.WeightsAndBiases.Weights[i]))
+	}
+
+	// print shape of biases
+	for i := range model.NeuralNetwork.WeightsAndBiases.Biases {
+		fmt.Printf("Biases for Layer %d: %d\n", i+1, len(model.NeuralNetwork.WeightsAndBiases.Biases[i]))
+	}
+
+	return nil
 }
 
 func println(args ...interface{}) {

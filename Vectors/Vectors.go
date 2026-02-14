@@ -1,4 +1,4 @@
-package Vectors
+package vectors
 
 import "fmt"
 

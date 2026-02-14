@@ -11,6 +11,7 @@ const (
 	ReLU    ActivationFunction = "relu"
 	Sigmoid ActivationFunction = "sigmoid"
 	Tanh    ActivationFunction = "tanh"
+	Softmax ActivationFunction = "softmax"
 )
 
 func GetActivationFunction(name ActivationFunction) func(float64) float64 {
@@ -21,6 +22,9 @@ func GetActivationFunction(name ActivationFunction) func(float64) float64 {
 		return sigmoidFunc
 	case Tanh:
 		return tanhFunc
+	case Softmax:
+		// Softmax is applied to entire vector, not element-wise
+		return nil
 	default:
 		return nil
 	}
@@ -39,4 +43,28 @@ func sigmoidFunc(x float64) float64 {
 
 func tanhFunc(x float64) float64 {
 	return math.Tanh(x)
+}
+
+// SoftmaxFunc applies softmax to a vector
+func SoftmaxFunc(x []float64) []float64 {
+	result := make([]float64, len(x))
+	max := x[0]
+	for i := 1; i < len(x); i++ {
+		if x[i] > max {
+			max = x[i]
+		}
+	}
+
+	// Subtract max for numerical stability
+	sum := 0.0
+	for i := 0; i < len(x); i++ {
+		result[i] = math.Exp(x[i] - max)
+		sum += result[i]
+	}
+
+	// Normalize
+	for i := 0; i < len(result); i++ {
+		result[i] /= sum
+	}
+	return result
 }

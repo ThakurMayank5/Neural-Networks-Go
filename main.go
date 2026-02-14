@@ -1,6 +1,10 @@
 package main
 
-import "github.com/ThakurMayank5/Neural-Networks-Go/NeuralNetwork"
+import (
+	"fmt"
+
+	"github.com/ThakurMayank5/Neural-Networks-Go/NeuralNetwork"
+)
 
 func main() {
 
@@ -37,4 +41,30 @@ func main() {
 
 	model.NeuralNetwork.Summary()
 
+	model.TrainingConfig.Epochs = 200
+
+	/*
+
+		Neural Network Summary:
+		Total Layers: 4
+		Input Layer Neurons: 3
+		Input Layer Activation Function: relu
+		Layer 1 Neurons: 5
+		Layer 1 Activation Function: relu
+		Layer 2 Neurons: 4
+		Layer 2 Activation Function: relu
+		Output Layer Neurons: 1
+		Output Layer Activation Function: sigmoid
+
+	*/
+
+	err := model.Fit(NeuralNetwork.Dataset{
+		Inputs:  [][]float64{{1, 0, 0}, {0, 0, 1}, {0, 1, 0}, {1, 0, 0}},
+		Outputs: [][]float64{{0}, {1}, {1}, {1}},
+	})
+	if err != nil {
+		fmt.Println("Training completed with error:", err)
+	} else {
+		fmt.Println("Training completed successfully.")
+	}
 }

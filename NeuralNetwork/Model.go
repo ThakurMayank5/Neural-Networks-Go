@@ -53,7 +53,7 @@ type TrainingConfig struct {
 
 // ModelWeightsAndBiases stores the model parameters
 type ModelWeightsAndBiases struct {
-	Weights [][]float64
+	Weights [][][]float64
 	Biases  [][]float64
 }
 

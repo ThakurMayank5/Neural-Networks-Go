@@ -2,101 +2,120 @@ package neuralnetwork
 
 import (
 	"fmt"
-
-	"github.com/ThakurMayank5/Neural-Networks-Go/losses"
+	"math/rand"
+	"time"
 )
 
-func (model *Model) SGDFitWithEpochs(dataset Dataset) error {
+func (model *Model) Fit(training Dataset, validation Dataset) error {
 
-	for epoch := 1; epoch <= model.TrainingConfig.Epochs; epoch++ {
-		fmt.Printf("Epoch %d/%d\n", epoch, model.TrainingConfig.Epochs)
-
-		err := model.SGDFit(dataset)
-
-		if err != nil {
-			fmt.Printf("Error during training: %v\n", err)
-			return err
-		}
-
-		_, evalErr := model.Evaluate(dataset)
-
-		if evalErr != nil {
-			fmt.Printf("Error during evaluation: %v\n", evalErr)
-			return evalErr
-		}
-	}
-
-	return nil
-}
-
-// Fit trains the model on the provided dataset
-
-// Stochastic Gradient Descent implementation
-// Training loop using SGD for training the neural network
-func (model *Model) SGDFit(dataset Dataset) error {
+	// initialize a random seed for further use
+	rand.Seed(time.Now().UnixNano())
 
 	// Dataset validation
 
-	if len(dataset.Inputs) == 0 || len(dataset.Outputs) == 0 {
-		return fmt.Errorf("dataset is empty")
+	if len(training.Inputs) == 0 || len(training.Outputs) == 0 {
+		return fmt.Errorf("training dataset is empty")
 	}
 
-	if len(dataset.Inputs) != len(dataset.Outputs) {
+	if len(training.Inputs) != len(training.Outputs) {
 		return fmt.Errorf("number of inputs and outputs must be the same")
 	}
 
-	if len(dataset.Inputs[0]) != model.NeuralNetwork.InputLayer.Neurons {
+	if len(training.Inputs[0]) != model.NeuralNetwork.InputLayer.Neurons {
 		return fmt.Errorf("input data does not match the number of neurons in the input layer")
 	}
 
-	totalLayers := len(model.NeuralNetwork.Layers) + 2 // Input and Output layers
+	total_samples := len(training.Inputs)
 
-	_ = totalLayers - 1 // totalTrainableLayers (Exclude input layer)
+	// totalLayers := len(model.NeuralNetwork.Layers) + 2 // Input and Output layers
 
-	// fmt.Printf("Total Layers: %d\n", totalLayers)
-	// fmt.Printf("Total Trainable Layers: %d\n", totalTrainableLayers)
+	epochs := model.TrainingConfig.Epochs
+	batchSize := model.TrainingConfig.BatchSize
 
-	// Steps:
-	// 1. Forward Propagation
-	// 2. Compute Loss
-	// 3. Backward Propagation
-	// 4. Compute Gradients
-	// 5. Update Weights and Biases
+	batchesPerEpoch := (total_samples + batchSize - 1) / batchSize // Ceiling division
 
-	for i := range dataset.Inputs {
-		input := dataset.Inputs[i]
-		target := dataset.Outputs[i]
+	fmt.Printf("Starting training for %d epochs with batch size %d (%d batches per epoch)\n", epochs, batchSize, batchesPerEpoch)
 
-		// Forward pass with activation caching
-		output, cache, err := model.NeuralNetwork.PredictWithCache(input)
-		if err != nil {
-			fmt.Printf("Error predicting output for input %v: %v\n", input, err)
-			return err
-		}
+	for epoch := 1; epoch <= epochs; epoch++ {
 
-		// fmt.Printf("Input: %v, Predicted Output: %v\n", input, output)
+		fmt.Printf("Epoch %d/%d\n", epoch, epochs)
 
-		// Compute loss (use Cross-Entropy for Softmax, MSE for others)
-		if model.NeuralNetwork.OutputLayer.ActivationFunction == "softmax" {
-			_, err = losses.CategoricalCrossEntropy(output, target)
-		} else {
-			_, err = losses.MeanSquaredError(target, output)
-		}
-		if err != nil {
-			fmt.Printf("Error computing loss for input %v: %v\n", input, err)
-			return err
-		}
+		// Shuffle the training data at the beginning of each epoch
+		shuffledIndices := rand.Perm(total_samples)
 
-		// fmt.Printf("Loss: %v\n", loss)
+		for batch := 0; batch < batchesPerEpoch; batch++ {
 
-		// Backward Propagation with weight/bias updates
-		err = model.Backpropagate(cache, target, output)
-		if err != nil {
-			fmt.Printf("Error during backpropagation: %v\n", err)
-			return err
+			start := batch * batchSize
+			end := start + batchSize
+			if end > total_samples {
+				end = total_samples
+			}
+
+			// Create mini-batch
+			batchInputs := make([][]float64, end-start)
+			batchTargets := make([][]float64, end-start)
+
+			for i, idx := range shuffledIndices[start:end] {
+				batchInputs[i] = training.Inputs[idx]
+				batchTargets[i] = training.Outputs[idx]
+			}
+
+			// Backward Propagation with weight/bias updates for the entire batch
+			err := model.BackpropagateBatch(batchInputs, batchTargets)
+			if err != nil {
+				return err
+			}
+
 		}
 
 	}
+
+	// _ = totalLayers - 1 // totalTrainableLayers (Exclude input layer)
+
+	// // fmt.Printf("Total Layers: %d\n", totalLayers)
+	// // fmt.Printf("Total Trainable Layers: %d\n", totalTrainableLayers)
+
+	// // Steps:
+	// // 1. Forward Propagation
+	// // 2. Compute Loss
+	// // 3. Backward Propagation
+	// // 4. Compute Gradients
+	// // 5. Update Weights and Biases
+
+	// for i := range training.Inputs {
+	// 	input := training.Inputs[i]
+	// 	target := training.Outputs[i]
+
+	// 	// Forward pass with activation caching
+	// 	output, cache, err := model.NeuralNetwork.PredictWithCache(input)
+	// 	if err != nil {
+	// 		fmt.Printf("Error predicting output for input %v: %v\n", input, err)
+	// 		return err
+	// 	}
+
+	// 	// fmt.Printf("Input: %v, Predicted Output: %v\n", input, output)
+
+	// 	// Compute loss (use Cross-Entropy for Softmax, MSE for others)
+	// 	if model.NeuralNetwork.OutputLayer.ActivationFunction == "softmax" {
+	// 		_, err = losses.CategoricalCrossEntropy(output, target)
+	// 	} else {
+	// 		_, err = losses.MeanSquaredError(target, output)
+	// 	}
+	// 	if err != nil {
+	// 		fmt.Printf("Error computing loss for input %v: %v\n", input, err)
+	// 		return err
+	// 	}
+
+	// 	// fmt.Printf("Loss: %v\n", loss)
+
+	// 	// Backward Propagation with weight/bias updates
+	// 	err = model.Backpropagate(cache, target, output)
+	// 	if err != nil {
+	// 		fmt.Printf("Error during backpropagation: %v\n", err)
+	// 		return err
+	// 	}
+
+	// }
 
 	return nil
 

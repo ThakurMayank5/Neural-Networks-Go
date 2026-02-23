@@ -64,7 +64,7 @@ func main() {
 	fmt.Printf("MNIST dataset loaded: %d samples with 784 features (28x28 pixels)!\n", len(dataset.Inputs))
 	fmt.Println("Pixel values already normalized to [0, 1]")
 
-	err = model.SGDFitWithEpochs(dataset)
+	err = model.Fit(dataset,dataset)
 
 	if err != nil {
 		fmt.Println("Training completed with error:", err)

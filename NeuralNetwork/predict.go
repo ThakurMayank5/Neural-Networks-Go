@@ -14,42 +14,47 @@ func (nn *NeuralNetwork) Predict(input []float64) ([]float64, error) {
 
 	x := input
 
-	for i := range len(weights) {
+	// Iterate through each layer
+	for i := 0; i < len(weights); i++ {
+		{
 
-		activationFunction := activation.ReLU
+			// Default to ReLU for hidden layers
+			activationFunction := activation.ReLU
 
-		if i == len(weights)-1 {
-			activationFunction = nn.OutputLayer.ActivationFunction
-		} else {
-			activationFunction = nn.Layers[i].ActivationFunction
-		}
-
-		newX := make([]float64, len(biases[i])) // Initialized elements as 0
-
-		for j := 0; j < len(biases[i]); j++ {
-			currWeights := weights[i][j*len(x) : (j+1)*len(x)]
-			dotProduct, err := vectors.DotProduct(x, currWeights)
-			if err != nil {
-				fmt.Println("Error computing dot product:", err)
-				return nil, err
-			}
-
-			// For softmax, we'll apply it after computing all z values
-			if activationFunction != activation.Softmax {
-				activationFunctionToUse := activation.GetActivationFunction(activationFunction)
-				newX[j] = activationFunctionToUse(dotProduct + biases[i][j])
+			if i == len(weights)-1 {
+				activationFunction = nn.OutputLayer.ActivationFunction
 			} else {
-				newX[j] = dotProduct + biases[i][j] // Store pre-activation for softmax
+				activationFunction = nn.Layers[i].ActivationFunction
 			}
+
+			newX := make([]float64, len(biases[i])) // Initialized elements as 0
+
+			// Iterate through each neuron in the current layer
+			for j := range biases[i] {
+				currWeights := weights[i][j]
+				dotProduct, err := vectors.DotProduct(x, currWeights)
+
+				if err != nil {
+					return nil, fmt.Errorf("error computing dot product: %v", err)
+				}
+
+				if activationFunction != activation.Softmax {
+					activationFunctionToUse := activation.GetActivationFunction(activationFunction)
+					newX[j] = activationFunctionToUse(dotProduct + biases[i][j])
+				} else {
+					newX[j] = dotProduct + biases[i][j] // Store pre-activation for softmax
+				}
+
+			}
+
+			// Apply softmax if needed
+			if i == len(weights)-1 && activationFunction == activation.Softmax {
+				newX = activation.SoftmaxFunc(newX)
+			}
+
+			x = newX
+
 		}
-
-		// Apply softmax if needed
-		if activationFunction == activation.Softmax {
-			newX = activation.SoftmaxFunc(newX)
-		}
-
-		x = newX
-
 	}
 	return x, nil
 }

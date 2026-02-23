@@ -1,9 +1,9 @@
 package neuralnetwork
 
 import (
-	"fmt"
 	"math"
 	"math/rand"
+	"sync"
 )
 
 // Kaiming Normal Initialization (He Initialization)
@@ -11,64 +11,119 @@ import (
 // fan_in is the number of input in the neuron from previous layers
 func KaimingNormal(nn *NeuralNetwork) error {
 
+	wg := sync.WaitGroup{}
+
 	println(nn.Layers)
 	println(len(nn.Layers))
 
-	for i := range len(nn.Layers) + 1 { // +1 for output layer
+	// Weight[layer][neuron][wgts]
 
-		println("Value of i:", i)
+	// Allocate memory for layers + output layer
+	nn.WeightsAndBiases.Weights = make([][][]float64, len(nn.Layers)+1) // +1 for output layer
 
-		if i == 0 {
-			fmt.Printf("Initializing weights for Layer %d (Input Layer) with Kaiming Normal\n", i+1)
-
-			standard_deviation := math.Sqrt(2.0 / float64(nn.InputLayer.Neurons))
-
-			fmt.Printf("Standard Deviation for Layer %d: %f\n", i+1, standard_deviation)
-
-			currWeights := make([]float64, nn.InputLayer.Neurons*nn.Layers[i].Neurons)
-
-			for j := range currWeights {
-				currWeights[j] = rand.NormFloat64() * standard_deviation
-			}
-
-			nn.WeightsAndBiases.Weights = append(nn.WeightsAndBiases.Weights, currWeights)
-
-			continue
-		}
+	// Allocate memory for each layer's neurons
+	for i := 0; i < len(nn.Layers)+1; i++ {
 
 		if i == len(nn.Layers) {
-			fmt.Printf("Initializing weights for Layer %d (Output Layer) with Kaiming Normal\n", i+1)
-
-			standard_deviation := math.Sqrt(2.0 / float64(nn.Layers[i-1].Neurons))
-
-			fmt.Printf("Standard Deviation for Layer %d: %f\n", i+1, standard_deviation)
-
-			currWeights := make([]float64, nn.Layers[i-1].Neurons*nn.OutputLayer.Neurons)
-
-			for j := range currWeights {
-				currWeights[j] = rand.NormFloat64() * standard_deviation
-			}
-
-			nn.WeightsAndBiases.Weights = append(nn.WeightsAndBiases.Weights, currWeights)
+			nn.WeightsAndBiases.Weights[i] = make([][]float64, nn.OutputLayer.Neurons)
 
 			continue
 		}
 
-		fmt.Printf("Initializing weights for Layer %d with Kaiming Normal\n", i+1)
-
-		standard_deviation := math.Sqrt(2.0 / float64(nn.Layers[i-1].Neurons))
-
-		fmt.Printf("Standard Deviation for Layer %d: %f\n", i+1, standard_deviation)
-
-		currWeights := make([]float64, nn.Layers[i-1].Neurons*nn.Layers[i].Neurons)
-
-		for k := range currWeights {
-			currWeights[k] = rand.NormFloat64() * standard_deviation
-		}
-
-		nn.WeightsAndBiases.Weights = append(nn.WeightsAndBiases.Weights, currWeights)
+		nn.WeightsAndBiases.Weights[i] = make([][]float64, nn.Layers[i].Neurons)
 
 	}
+
+	// Output + Hidden Layers
+	for i := len(nn.Layers); i >= 0; i-- {
+		wg.Add(1)
+
+		// Output Layer
+		if i == len(nn.Layers) {
+
+			go func(n int) {
+				defer wg.Done()
+
+				// For each neuron in the output layer
+				for j := nn.OutputLayer.Neurons - 1; j >= 0; j-- {
+
+					totalWeights := 0
+
+					if len(nn.Layers) == 0 {
+						totalWeights = nn.InputLayer.Neurons
+					} else {
+						totalWeights = nn.Layers[n-1].Neurons
+					}
+
+					standard_deviation := math.Sqrt(2.0 / float64(totalWeights))
+
+					currWeights := make([]float64, totalWeights)
+
+					for k := range currWeights {
+						currWeights[k] = rand.NormFloat64() * standard_deviation
+					}
+
+					nn.WeightsAndBiases.Weights[n][j] = currWeights
+
+				}
+			}(i)
+
+			continue
+		}
+
+		// First Hidden Layer
+		if i == 0 {
+
+			go func(n int) {
+				defer wg.Done()
+
+				// For each neuron in the first hidden layer
+				for j := nn.Layers[n].Neurons - 1; j >= 0; j-- {
+
+					totalWeights := nn.InputLayer.Neurons
+
+					standard_deviation := math.Sqrt(2.0 / float64(totalWeights))
+
+					currWeights := make([]float64, totalWeights)
+
+					for k := range currWeights {
+						currWeights[k] = rand.NormFloat64() * standard_deviation
+					}
+
+					nn.WeightsAndBiases.Weights[n][j] = currWeights
+
+				}
+			}(i)
+
+			continue
+
+		}
+
+		// Hidden Layers
+		go func(layerIndex int) {
+			defer wg.Done()
+
+			// For each neuron in the hidden layer
+			for j := nn.Layers[layerIndex].Neurons - 1; j >= 0; j-- {
+
+				totalWeights := nn.Layers[layerIndex-1].Neurons
+
+				standard_deviation := math.Sqrt(2.0 / float64(totalWeights))
+				currWeights := make([]float64, totalWeights)
+
+				for k := range currWeights {
+					currWeights[k] = rand.NormFloat64() * standard_deviation
+				}
+
+				nn.WeightsAndBiases.Weights[layerIndex][j] = currWeights
+
+			}
+
+		}(i)
+
+	}
+
+	wg.Wait()
 
 	return nil
 }

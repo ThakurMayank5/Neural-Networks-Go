@@ -67,13 +67,15 @@ func (model *Model) Fit(training Dataset, validation Dataset) error {
 			}
 
 		}
+		// Validation per epoch
+
+		validationLoss, err := model.ForwardPassBatch(validation.Inputs, validation.Outputs)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("Validation Loss: %.4f\n", validationLoss)
 
 	}
-
-
-
-
-	
 
 	return nil
 

@@ -70,52 +70,10 @@ func (model *Model) Fit(training Dataset, validation Dataset) error {
 
 	}
 
-	// _ = totalLayers - 1 // totalTrainableLayers (Exclude input layer)
 
-	// // fmt.Printf("Total Layers: %d\n", totalLayers)
-	// // fmt.Printf("Total Trainable Layers: %d\n", totalTrainableLayers)
 
-	// // Steps:
-	// // 1. Forward Propagation
-	// // 2. Compute Loss
-	// // 3. Backward Propagation
-	// // 4. Compute Gradients
-	// // 5. Update Weights and Biases
 
-	// for i := range training.Inputs {
-	// 	input := training.Inputs[i]
-	// 	target := training.Outputs[i]
-
-	// 	// Forward pass with activation caching
-	// 	output, cache, err := model.NeuralNetwork.PredictWithCache(input)
-	// 	if err != nil {
-	// 		fmt.Printf("Error predicting output for input %v: %v\n", input, err)
-	// 		return err
-	// 	}
-
-	// 	// fmt.Printf("Input: %v, Predicted Output: %v\n", input, output)
-
-	// 	// Compute loss (use Cross-Entropy for Softmax, MSE for others)
-	// 	if model.NeuralNetwork.OutputLayer.ActivationFunction == "softmax" {
-	// 		_, err = losses.CategoricalCrossEntropy(output, target)
-	// 	} else {
-	// 		_, err = losses.MeanSquaredError(target, output)
-	// 	}
-	// 	if err != nil {
-	// 		fmt.Printf("Error computing loss for input %v: %v\n", input, err)
-	// 		return err
-	// 	}
-
-	// 	// fmt.Printf("Loss: %v\n", loss)
-
-	// 	// Backward Propagation with weight/bias updates
-	// 	err = model.Backpropagate(cache, target, output)
-	// 	if err != nil {
-	// 		fmt.Printf("Error during backpropagation: %v\n", err)
-	// 		return err
-	// 	}
-
-	// }
+	
 
 	return nil
 

@@ -57,14 +57,13 @@ func main() {
 
 	model.NeuralNetwork.Summary()
 
-	// Load pre-trained weights from file instead of training
-	err := model.LoadWeights("mnist.weights")
+	// --- Step 1: Initialize weights and train ---
+
+	err := model.InitializeWeights()
 	if err != nil {
-		fmt.Println("Error loading weights:", err)
+		fmt.Println("Error initializing weights:", err)
 		return
 	}
-
-	fmt.Println("Weights loaded from mnist.weights")
 
 	// Build column index slice for 784 pixel columns (columns 1-784)
 	pixelCols := make([]int, 784)
@@ -74,6 +73,7 @@ func main() {
 
 	// Load MNIST CSV
 	// Column 0 is the integer label (0-9); columns 1-784 are pixel values.
+	// MinMaxNormalize scales pixel values from [0, 255] to [0, 1] automatically.
 	d, err := dataloader.FromCSV(
 		"data.csv",
 		dataset.CSVConfig{
@@ -83,6 +83,7 @@ func main() {
 			LabelColumn:    0,
 			NumClasses:     10,
 			Delimiter:      ',',
+			Scaling:        dataset.MinMaxNormalize,
 		},
 	)
 	if err != nil {
@@ -93,33 +94,83 @@ func main() {
 	fmt.Printf("MNIST dataset loaded: %d samples, %d features, %d output classes\n",
 		d.NumSamples, d.NumFeatures, d.NumOutputs)
 
-	// Normalize pixel values from [0, 255] to [0, 1]
-	for i := range d.Inputs {
-		for j := range d.Inputs[i] {
-			d.Inputs[i][j] /= 255.0
-		}
-	}
-
-	fmt.Println("Pixel values normalized to [0, 1]")
-
-	// Split into 80% train / 20% test (shuffled) — using test set for evaluation
-	_, test, err := dataset.SplitWithShuffle(d, 0.8)
+	// Split into 80% train / 20% test (shuffled)
+	train, test, err := dataset.SplitWithShuffle(d, 0.8)
 	if err != nil {
 		fmt.Println("Error splitting dataset:", err)
 		return
 	}
 
-	fmt.Printf("Test set: %d samples\n", test.NumSamples)
+	fmt.Printf("Train: %d samples | Test: %d samples\n\n", train.NumSamples, test.NumSamples)
 
-	fmt.Println("\nEvaluating on test set...")
+	err = model.Fit(train, test)
+	if err != nil {
+		fmt.Println("Training error:", err)
+		return
+	}
 
-	// Sample predictions — first 3 of each digit class from the test set
+	fmt.Println("\nTraining completed successfully!")
+
+	// --- Step 2: Save trained weights ---
+
+	err = model.SaveWeights("mnist.weights")
+	if err != nil {
+		fmt.Println("Error saving weights:", err)
+		return
+	}
+
+	fmt.Println("Weights saved to mnist.weights")
+
+	// --- Step 3: Load weights into a fresh model ---
+
+	fmt.Println("\nLoading weights into a fresh model...")
+
+	loadedModel := nn.Model{
+		NeuralNetwork: nn.NeuralNetwork{
+			InputLayer: nn.InputLayer{
+				Neurons: 784,
+			},
+			Layers: []nn.Layer{
+				{
+					Neurons:            128,
+					ActivationFunction: activ.Sigmoid,
+				},
+				{
+					Neurons:            64,
+					ActivationFunction: activ.Sigmoid,
+				},
+			},
+			OutputLayer: nn.OutputLayer{
+				Neurons:            10,
+				ActivationFunction: activ.Softmax,
+			},
+		},
+	}
+
+	err = loadedModel.LoadWeights("mnist.weights")
+	if err != nil {
+		fmt.Println("Error loading weights:", err)
+		return
+	}
+
+	fmt.Println("Weights loaded from mnist.weights")
+
+	// --- Step 4: Evaluate loaded model on test set ---
+
+	fmt.Printf("\n--- Evaluation on Test Set (%d samples) ---\n", test.NumSamples)
+	_, err = loadedModel.Evaluate(test)
+	if err != nil {
+		fmt.Println("Evaluation error:", err)
+		return
+	}
+
+	// --- Step 5: Sample predictions from test set ---
+
 	fmt.Println("\n--- Sample Predictions from Test Set (first 3 of each digit) ---")
 	classCounts := make(map[int]int)
 	samplesPerClass := 3
 
 	for i := 0; i < len(test.Inputs) && len(classCounts) < 10; i++ {
-		// Actual class
 		actualIdx := 0
 		for j := 1; j < len(test.Outputs[i]); j++ {
 			if test.Outputs[i][j] > test.Outputs[i][actualIdx] {
@@ -131,12 +182,11 @@ func main() {
 			continue
 		}
 
-		prediction, err := model.NeuralNetwork.Predict(test.Inputs[i])
+		prediction, err := loadedModel.NeuralNetwork.Predict(test.Inputs[i])
 		if err != nil {
 			continue
 		}
 
-		// Predicted class
 		predIdx := 0
 		for j := 1; j < len(prediction); j++ {
 			if prediction[j] > prediction[predIdx] {
@@ -154,6 +204,4 @@ func main() {
 
 		classCounts[actualIdx]++
 	}
-
-	model.SaveWeights("mnist.weights")
 }

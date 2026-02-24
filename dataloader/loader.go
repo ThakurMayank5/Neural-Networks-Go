@@ -3,6 +3,7 @@ package dataloader
 import (
 	"encoding/csv"
 	"fmt"
+	"math"
 	"os"
 	"sort"
 	"strconv"
@@ -168,6 +169,14 @@ func FromCSV(filePath string, config dataset.CSVConfig) (dataset.Dataset, error)
 		numOutputs = len(outputs[0])
 	}
 
+	// Apply input scaling if requested
+	switch config.Scaling {
+	case dataset.MinMaxNormalize:
+		minMaxNormalize(inputs)
+	case dataset.ZScoreStandardize:
+		zScoreStandardize(inputs)
+	}
+
 	return dataset.Dataset{
 		Inputs:      inputs,
 		Outputs:     outputs,
@@ -175,4 +184,65 @@ func FromCSV(filePath string, config dataset.CSVConfig) (dataset.Dataset, error)
 		NumFeatures: len(config.InputColumns),
 		NumOutputs:  numOutputs,
 	}, nil
+}
+
+// minMaxNormalize scales each feature column to [0, 1].
+// x' = (x - min) / (max - min)
+func minMaxNormalize(inputs [][]float64) {
+	if len(inputs) == 0 {
+		return
+	}
+	numFeatures := len(inputs[0])
+	for f := 0; f < numFeatures; f++ {
+		min, max := inputs[0][f], inputs[0][f]
+		for _, row := range inputs {
+			if row[f] < min {
+				min = row[f]
+			}
+			if row[f] > max {
+				max = row[f]
+			}
+		}
+		r := max - min
+		for i := range inputs {
+			if r > 0 {
+				inputs[i][f] = (inputs[i][f] - min) / r
+			} else {
+				inputs[i][f] = 0
+			}
+		}
+	}
+}
+
+// zScoreStandardize scales each feature column to mean=0, std=1.
+// x' = (x - mean) / std
+func zScoreStandardize(inputs [][]float64) {
+	if len(inputs) == 0 {
+		return
+	}
+	n := float64(len(inputs))
+	numFeatures := len(inputs[0])
+	for f := 0; f < numFeatures; f++ {
+		mean := 0.0
+		for _, row := range inputs {
+			mean += row[f]
+		}
+		mean /= n
+
+		variance := 0.0
+		for _, row := range inputs {
+			d := row[f] - mean
+			variance += d * d
+		}
+		variance /= n
+		std := math.Sqrt(variance)
+
+		for i := range inputs {
+			if std > 0 {
+				inputs[i][f] = (inputs[i][f] - mean) / std
+			} else {
+				inputs[i][f] = 0
+			}
+		}
+	}
 }

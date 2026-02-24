@@ -1,6 +1,6 @@
 package neuralnetwork
 
-import "github.com/ThakurMayank5/Neural-Networks-Go/losses"
+import "github.com/ThakurMayank5/gonn/losses"
 
 func (model *Model) ForwardPassBatch(batchInputs [][]float64, batchTargets [][]float64) (float64, error) {
 
@@ -36,4 +36,3 @@ func (model *Model) ForwardPassBatch(batchInputs [][]float64, batchTargets [][]f
 
 	return loss, nil
 }
-

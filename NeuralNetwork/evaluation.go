@@ -3,7 +3,7 @@ package neuralnetwork
 import (
 	"fmt"
 
-	"github.com/ThakurMayank5/Neural-Networks-Go/losses"
+	"github.com/ThakurMayank5/gonn/losses"
 )
 
 func (model *Model) Evaluate(dataset Dataset) (float64, error) {

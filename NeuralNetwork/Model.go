@@ -3,7 +3,7 @@ package neuralnetwork
 import (
 	"fmt"
 
-	activation "github.com/ThakurMayank5/Neural-Networks-Go/activation"
+	activation "github.com/ThakurMayank5/gonn/activation"
 )
 
 // Optimizer represents the optimization algorithm

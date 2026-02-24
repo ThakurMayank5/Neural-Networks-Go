@@ -3,8 +3,8 @@ package neuralnetwork
 import (
 	"fmt"
 
-	"github.com/ThakurMayank5/Neural-Networks-Go/activation"
-	"github.com/ThakurMayank5/Neural-Networks-Go/vectors"
+	"github.com/ThakurMayank5/gonn/activation"
+	"github.com/ThakurMayank5/gonn/vectors"
 )
 
 // z is pre activation values, a is post activation values, predictions is the final output

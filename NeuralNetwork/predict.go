@@ -3,8 +3,8 @@ package neuralnetwork
 import (
 	"fmt"
 
-	"github.com/ThakurMayank5/Neural-Networks-Go/activation"
-	vectors "github.com/ThakurMayank5/Neural-Networks-Go/vectors"
+	"github.com/ThakurMayank5/gonn/activation"
+	vectors "github.com/ThakurMayank5/gonn/vectors"
 )
 
 func (nn *NeuralNetwork) Predict(input []float64) ([]float64, error) {

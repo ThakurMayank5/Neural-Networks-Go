@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 
-	activ "github.com/ThakurMayank5/Neural-Networks-Go/activation"
-	"github.com/ThakurMayank5/Neural-Networks-Go/neuralnetwork"
-	nn "github.com/ThakurMayank5/Neural-Networks-Go/neuralnetwork"
+	activ "github.com/ThakurMayank5/gonn/activation"
+	"github.com/ThakurMayank5/gonn/neuralnetwork"
+	nn "github.com/ThakurMayank5/gonn/neuralnetwork"
 )
 
 func main() {
@@ -64,7 +64,7 @@ func main() {
 	fmt.Printf("MNIST dataset loaded: %d samples with 784 features (28x28 pixels)!\n", len(dataset.Inputs))
 	fmt.Println("Pixel values already normalized to [0, 1]")
 
-	err = model.Fit(dataset,dataset)
+	err = model.Fit(dataset, dataset)
 
 	if err != nil {
 		fmt.Println("Training completed with error:", err)

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/ThakurMayank5/Neural-Networks-Go/activation"
+	"github.com/ThakurMayank5/gonn/activation"
 )
 
 // This uses mini batch gradient descent

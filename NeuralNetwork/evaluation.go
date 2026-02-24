@@ -3,10 +3,11 @@ package neuralnetwork
 import (
 	"fmt"
 
+	"github.com/ThakurMayank5/gonn/dataset"
 	"github.com/ThakurMayank5/gonn/losses"
 )
 
-func (model *Model) Evaluate(dataset Dataset) (float64, error) {
+func (model *Model) Evaluate(dataset dataset.Dataset) (float64, error) {
 
 	// Dataset validation
 	if len(dataset.Inputs) == 0 || len(dataset.Outputs) == 0 {

@@ -2,11 +2,12 @@ package neuralnetwork
 
 import (
 	"fmt"
+	"github.com/ThakurMayank5/gonn/dataset"
 	"math/rand"
 	"time"
 )
 
-func (model *Model) Fit(training Dataset, validation Dataset) error {
+func (model *Model) Fit(training dataset.Dataset, validation dataset.Dataset) error {
 
 	// initialize a random seed for further use
 	rand.Seed(time.Now().UnixNano())
@@ -26,8 +27,6 @@ func (model *Model) Fit(training Dataset, validation Dataset) error {
 	}
 
 	total_samples := len(training.Inputs)
-
-	// totalLayers := len(model.NeuralNetwork.Layers) + 2 // Input and Output layers
 
 	epochs := model.TrainingConfig.Epochs
 	batchSize := model.TrainingConfig.BatchSize

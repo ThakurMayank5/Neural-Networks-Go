@@ -35,12 +35,6 @@ type OutputLayer struct {
 	Initialization     Initialization
 }
 
-// Dataset represents training data
-type Dataset struct {
-	Inputs  [][]float64
-	Outputs [][]float64
-}
-
 // TrainingConfig represents training hyperparameters
 type TrainingConfig struct {
 	Epochs          int
@@ -140,27 +134,24 @@ func (model *Model) InitializeWeights() error {
 
 	model.NeuralNetwork.WeightsAndBiases.Biases = biases
 
-	// Initialize weights using Kaiming Normal initialization
-	err := KaimingNormal(&model.NeuralNetwork)
-	if err != nil {
-		return err
+	// Allocate weight tensors
+	allocateWeights(&model.NeuralNetwork)
+
+	// Initialize each hidden layer with its own strategy
+	for i, layer := range model.NeuralNetwork.Layers {
+		init := layer.Initialization
+		if init == "" {
+			init = XavierNormalInitializer // default
+		}
+		initLayerWeights(&model.NeuralNetwork, i, init)
 	}
 
-	println("Weights:", model.NeuralNetwork.WeightsAndBiases.Weights)
-
-	// print shape of weights
-	for i := range model.NeuralNetwork.WeightsAndBiases.Weights {
-		fmt.Printf("Weights for Layer %d: %d\n", i+1, len(model.NeuralNetwork.WeightsAndBiases.Weights[i]))
+	// Initialize output layer
+	outputInit := model.NeuralNetwork.OutputLayer.Initialization
+	if outputInit == "" {
+		outputInit = KaimingNormalInitializer // default
 	}
-
-	// print shape of biases
-	for i := range model.NeuralNetwork.WeightsAndBiases.Biases {
-		fmt.Printf("Biases for Layer %d: %d\n", i+1, len(model.NeuralNetwork.WeightsAndBiases.Biases[i]))
-	}
+	initLayerWeights(&model.NeuralNetwork, len(model.NeuralNetwork.Layers), outputInit)
 
 	return nil
-}
-
-func println(args ...interface{}) {
-	fmt.Println(args...)
 }

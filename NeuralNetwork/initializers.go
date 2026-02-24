@@ -3,127 +3,79 @@ package neuralnetwork
 import (
 	"math"
 	"math/rand"
-	"sync"
 )
 
-// Kaiming Normal Initialization (He Initialization)
-// w = randn() × sqrt(2/fan_in)
-// fan_in is the number of input in the neuron from previous layers
-func KaimingNormal(nn *NeuralNetwork) error {
-
-	wg := sync.WaitGroup{}
-
-	println(nn.Layers)
-	println(len(nn.Layers))
-
-	// Weight[layer][neuron][wgts]
-
-	// Allocate memory for layers + output layer
-	nn.WeightsAndBiases.Weights = make([][][]float64, len(nn.Layers)+1) // +1 for output layer
-
-	// Allocate memory for each layer's neurons
-	for i := 0; i < len(nn.Layers)+1; i++ {
-
-		if i == len(nn.Layers) {
-			nn.WeightsAndBiases.Weights[i] = make([][]float64, nn.OutputLayer.Neurons)
-
-			continue
-		}
-
-		nn.WeightsAndBiases.Weights[i] = make([][]float64, nn.Layers[i].Neurons)
-
+// fanIn returns the number of inputs into layer i (i.e. the size of the previous layer).
+func fanIn(nn *NeuralNetwork, layerIndex int) int {
+	if layerIndex == 0 {
+		return nn.InputLayer.Neurons
 	}
+	return nn.Layers[layerIndex-1].Neurons
+}
 
-	// Output + Hidden Layers
-	for i := len(nn.Layers); i >= 0; i-- {
-		wg.Add(1)
+// fanOut returns the number of neurons in layer i (size of the current layer).
+func fanOut(nn *NeuralNetwork, layerIndex int) int {
+	if layerIndex == len(nn.Layers) {
+		return nn.OutputLayer.Neurons
+	}
+	return nn.Layers[layerIndex].Neurons
+}
 
-		// Output Layer
-		if i == len(nn.Layers) {
+// allocateWeights allocates the top-level Weights slice for all trainable layers.
+func allocateWeights(nn *NeuralNetwork) {
+	nn.WeightsAndBiases.Weights = make([][][]float64, len(nn.Layers)+1)
+	for i := range nn.WeightsAndBiases.Weights {
+		nn.WeightsAndBiases.Weights[i] = make([][]float64, fanOut(nn, i))
+	}
+}
 
-			go func(n int) {
-				defer wg.Done()
+// initLayerWeights fills nn.WeightsAndBiases.Weights[layerIndex] using the
+// given Initialization strategy.
+func initLayerWeights(nn *NeuralNetwork, layerIndex int, init Initialization) {
+	fi := fanIn(nn, layerIndex)
+	fo := fanOut(nn, layerIndex)
 
-				// For each neuron in the output layer
-				for j := nn.OutputLayer.Neurons - 1; j >= 0; j-- {
+	for j := 0; j < fo; j++ {
+		weights := make([]float64, fi)
 
-					totalWeights := 0
+		switch init {
 
-					if len(nn.Layers) == 0 {
-						totalWeights = nn.InputLayer.Neurons
-					} else {
-						totalWeights = nn.Layers[n-1].Neurons
-					}
-
-					standard_deviation := math.Sqrt(2.0 / float64(totalWeights))
-
-					currWeights := make([]float64, totalWeights)
-
-					for k := range currWeights {
-						currWeights[k] = rand.NormFloat64() * standard_deviation
-					}
-
-					nn.WeightsAndBiases.Weights[n][j] = currWeights
-
-				}
-			}(i)
-
-			continue
-		}
-
-		// First Hidden Layer
-		if i == 0 {
-
-			go func(n int) {
-				defer wg.Done()
-
-				// For each neuron in the first hidden layer
-				for j := nn.Layers[n].Neurons - 1; j >= 0; j-- {
-
-					totalWeights := nn.InputLayer.Neurons
-
-					standard_deviation := math.Sqrt(2.0 / float64(totalWeights))
-
-					currWeights := make([]float64, totalWeights)
-
-					for k := range currWeights {
-						currWeights[k] = rand.NormFloat64() * standard_deviation
-					}
-
-					nn.WeightsAndBiases.Weights[n][j] = currWeights
-
-				}
-			}(i)
-
-			continue
-
-		}
-
-		// Hidden Layers
-		go func(layerIndex int) {
-			defer wg.Done()
-
-			// For each neuron in the hidden layer
-			for j := nn.Layers[layerIndex].Neurons - 1; j >= 0; j-- {
-
-				totalWeights := nn.Layers[layerIndex-1].Neurons
-
-				standard_deviation := math.Sqrt(2.0 / float64(totalWeights))
-				currWeights := make([]float64, totalWeights)
-
-				for k := range currWeights {
-					currWeights[k] = rand.NormFloat64() * standard_deviation
-				}
-
-				nn.WeightsAndBiases.Weights[layerIndex][j] = currWeights
-
+		// Kaiming Normal: w ~ N(0, sqrt(2/fan_in))
+		case KaimingNormalInitializer:
+			std := math.Sqrt(2.0 / float64(fi))
+			for k := range weights {
+				weights[k] = rand.NormFloat64() * std
 			}
 
-		}(i)
+		// Kaiming Uniform: w ~ U(-limit, limit), limit = sqrt(6/fan_in)
+		case KaimingUniformInitializer:
+			limit := math.Sqrt(6.0 / float64(fi))
+			for k := range weights {
+				weights[k] = (rand.Float64()*2 - 1) * limit
+			}
 
+		// Xavier Normal: w ~ N(0, sqrt(2/(fan_in+fan_out)))
+		case XavierNormalInitializer:
+			std := math.Sqrt(2.0 / float64(fi+fo))
+			for k := range weights {
+				weights[k] = rand.NormFloat64() * std
+			}
+
+		// Xavier Uniform: w ~ U(-limit, limit), limit = sqrt(6/(fan_in+fan_out))
+		case XavierUniformInitializer:
+			limit := math.Sqrt(6.0 / float64(fi+fo))
+			for k := range weights {
+				weights[k] = (rand.Float64()*2 - 1) * limit
+			}
+
+		default:
+			// Default to Xavier Normal if an unknown initializer is specified
+			std := math.Sqrt(2.0 / float64(fi+fo))
+			for k := range weights {
+				weights[k] = rand.NormFloat64() * std
+			}
+		}
+
+		nn.WeightsAndBiases.Weights[layerIndex][j] = weights
 	}
-
-	wg.Wait()
-
-	return nil
 }

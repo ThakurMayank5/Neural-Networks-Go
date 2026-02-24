@@ -9,19 +9,34 @@ import (
 	nn "github.com/ThakurMayank5/gonn/neuralnetwork"
 )
 
+// Fashion MNIST class labels (index matches one-hot position)
+var classNames = []string{
+	"T-shirt/top", // 0
+	"Trouser",     // 1
+	"Pullover",    // 2
+	"Dress",       // 3
+	"Coat",        // 4
+	"Sandal",      // 5
+	"Shirt",       // 6
+	"Sneaker",     // 7
+	"Bag",         // 8
+	"Ankle boot",  // 9
+}
+
 func main() {
 
-	// MNIST Handwritten Digit Classification
+	// Fashion MNIST Clothing Classification
 	//
-	// CSV format: label, pixel0, pixel1, ..., pixel783
-	//   Column 0   : digit label (0-9)
-	//   Columns 1-784 : pixel values (0-255), normalized to [0,1]
+	// CSV format (fashion-mnist_train.csv / fashion-mnist_test.csv):
+	//   Col  0      : label  (int 0-9)
+	//   Col  1-784  : pixel values (0-255)
 	//
 	// Architecture:
-	//   Input  : 784  (28×28 pixels)
-	//   Hidden : 128  → Sigmoid  (Xavier Normal)
-	//   Hidden :  64  → Sigmoid  (Xavier Normal)
-	//   Output :  10  → Softmax  (Kaiming Normal)
+	//   Input  : 784   (28×28 pixels)
+	//   Hidden : 256   → ReLU   (Kaiming Normal)
+	//   Hidden : 128   → ReLU   (Kaiming Normal)
+	//   Hidden :  64   → ReLU   (Kaiming Normal)
+	//   Output :  10   → Softmax (Kaiming Normal)
 
 	model := nn.Model{
 		NeuralNetwork: nn.NeuralNetwork{
@@ -30,14 +45,19 @@ func main() {
 			},
 			Layers: []nn.Layer{
 				{
+					Neurons:            256,
+					ActivationFunction: activ.ReLU,
+					Initialization:     nn.KaimingNormalInitializer,
+				},
+				{
 					Neurons:            128,
-					ActivationFunction: activ.Sigmoid,
-					Initialization:     nn.XavierNormalInitializer,
+					ActivationFunction: activ.ReLU,
+					Initialization:     nn.KaimingNormalInitializer,
 				},
 				{
 					Neurons:            64,
-					ActivationFunction: activ.Sigmoid,
-					Initialization:     nn.XavierNormalInitializer,
+					ActivationFunction: activ.ReLU,
+					Initialization:     nn.KaimingNormalInitializer,
 				},
 			},
 			OutputLayer: nn.OutputLayer{
@@ -47,17 +67,17 @@ func main() {
 			},
 		},
 		TrainingConfig: nn.TrainingConfig{
-			Epochs:       20,
+			Epochs:       30,
 			LearningRate: 0.01,
 			Optimizer:    "sgd",
 			LossFunction: "categorical_crossentropy",
-			BatchSize:    64,
+			BatchSize:    128,
 		},
 	}
 
 	model.NeuralNetwork.Summary()
 
-	// --- Step 1: Initialize weights and train ---
+	// --- Step 1: Initialize weights ---
 
 	err := model.InitializeWeights()
 	if err != nil {
@@ -65,43 +85,44 @@ func main() {
 		return
 	}
 
-	// Build column index slice for 784 pixel columns (columns 1-784)
+	// Build pixel column slice (cols 1-784)
 	pixelCols := make([]int, 784)
 	for i := range pixelCols {
 		pixelCols[i] = i + 1
 	}
 
-	// Load MNIST CSV
-	// Column 0 is the integer label (0-9); columns 1-784 are pixel values.
-	// MinMaxNormalize scales pixel values from [0, 255] to [0, 1] automatically.
-	d, err := dataloader.FromCSV(
-		"data.csv",
-		dataset.CSVConfig{
-			HasHeader:      true,
-			InputColumns:   pixelCols,
-			HasLabelColumn: true,
-			LabelColumn:    0,
-			NumClasses:     10,
-			Delimiter:      ',',
-			Scaling:        dataset.MinMaxNormalize,
-		},
-	)
-	if err != nil {
-		fmt.Println("Error loading dataset:", err)
-		return
+	cfg := dataset.CSVConfig{
+		HasHeader:      true,
+		InputColumns:   pixelCols,
+		HasLabelColumn: true,
+		LabelColumn:    0,
+		NumClasses:     10,
+		Delimiter:      ',',
+		Scaling:        dataset.MinMaxNormalize,
 	}
 
-	fmt.Printf("MNIST dataset loaded: %d samples, %d features, %d output classes\n",
-		d.NumSamples, d.NumFeatures, d.NumOutputs)
+	// --- Step 2: Load training set ---
 
-	// Split into 80% train / 20% test (shuffled)
-	train, test, err := dataset.SplitWithShuffle(d, 0.8)
+	fmt.Println("Loading training set...")
+	train, err := dataloader.FromCSV("fashion-mnist_train.csv", cfg)
 	if err != nil {
-		fmt.Println("Error splitting dataset:", err)
+		fmt.Println("Error loading training set:", err)
 		return
 	}
+	fmt.Printf("Training set: %d samples, %d features, %d classes\n",
+		train.NumSamples, train.NumFeatures, train.NumOutputs)
 
-	fmt.Printf("Train: %d samples | Test: %d samples\n\n", train.NumSamples, test.NumSamples)
+	// --- Step 3: Load test set ---
+
+	fmt.Println("Loading test set...")
+	test, err := dataloader.FromCSV("fashion-mnist_test.csv", cfg)
+	if err != nil {
+		fmt.Println("Error loading test set:", err)
+		return
+	}
+	fmt.Printf("Test set:     %d samples\n\n", test.NumSamples)
+
+	// --- Step 4: Train ---
 
 	err = model.Fit(train, test)
 	if err != nil {
@@ -111,17 +132,17 @@ func main() {
 
 	fmt.Println("\nTraining completed successfully!")
 
-	// --- Step 2: Save trained weights ---
+	// --- Step 5: Save trained weights ---
 
-	err = model.SaveWeights("mnist.weights")
+	err = model.SaveWeights("fashion_mnist.weights")
 	if err != nil {
 		fmt.Println("Error saving weights:", err)
 		return
 	}
 
-	fmt.Println("Weights saved to mnist.weights")
+	fmt.Println("Weights saved to fashion_mnist.weights")
 
-	// --- Step 3: Load weights into a fresh model ---
+	// --- Step 6: Load weights into a fresh model ---
 
 	fmt.Println("\nLoading weights into a fresh model...")
 
@@ -131,14 +152,9 @@ func main() {
 				Neurons: 784,
 			},
 			Layers: []nn.Layer{
-				{
-					Neurons:            128,
-					ActivationFunction: activ.Sigmoid,
-				},
-				{
-					Neurons:            64,
-					ActivationFunction: activ.Sigmoid,
-				},
+				{Neurons: 256, ActivationFunction: activ.ReLU},
+				{Neurons: 128, ActivationFunction: activ.ReLU},
+				{Neurons: 64, ActivationFunction: activ.ReLU},
 			},
 			OutputLayer: nn.OutputLayer{
 				Neurons:            10,
@@ -147,15 +163,15 @@ func main() {
 		},
 	}
 
-	err = loadedModel.LoadWeights("mnist.weights")
+	err = loadedModel.LoadWeights("fashion_mnist.weights")
 	if err != nil {
 		fmt.Println("Error loading weights:", err)
 		return
 	}
 
-	fmt.Println("Weights loaded from mnist.weights")
+	fmt.Println("Weights loaded from fashion_mnist.weights")
 
-	// --- Step 4: Evaluate loaded model on test set ---
+	// --- Step 7: Evaluate on test set ---
 
 	fmt.Printf("\n--- Evaluation on Test Set (%d samples) ---\n", test.NumSamples)
 	_, err = loadedModel.Evaluate(test)
@@ -164,13 +180,13 @@ func main() {
 		return
 	}
 
-	// --- Step 5: Sample predictions from test set ---
+	// --- Step 8: Sample predictions (first 2 of each class) ---
 
-	fmt.Println("\n--- Sample Predictions from Test Set (first 3 of each digit) ---")
+	fmt.Println("\n--- Sample Predictions from Test Set (first 2 per class) ---")
 	classCounts := make(map[int]int)
-	samplesPerClass := 3
+	samplesPerClass := 2
 
-	for i := 0; i < len(test.Inputs) && len(classCounts) < 10; i++ {
+	for i := 0; i < len(test.Inputs); i++ {
 		actualIdx := 0
 		for j := 1; j < len(test.Outputs[i]); j++ {
 			if test.Outputs[i][j] > test.Outputs[i][actualIdx] {
@@ -199,9 +215,25 @@ func main() {
 			match = "✗"
 		}
 
-		fmt.Printf("Sample %d: Predicted Digit %d (%.4f) | Actual Digit %d %s\n",
-			i+1, predIdx, prediction[predIdx], actualIdx, match)
+		fmt.Printf("Sample %4d: Predicted %-14s (%.4f) | Actual %-14s %s\n",
+			i+1,
+			classNames[predIdx], prediction[predIdx],
+			classNames[actualIdx],
+			match)
 
 		classCounts[actualIdx]++
+
+		if len(classCounts) == 10 {
+			allDone := true
+			for _, c := range classCounts {
+				if c < samplesPerClass {
+					allDone = false
+					break
+				}
+			}
+			if allDone {
+				break
+			}
+		}
 	}
 }

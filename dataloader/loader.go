@@ -39,6 +39,8 @@ func FromCSV(filePath string, config dataset.CSVConfig) (dataset.Dataset, error)
 	if config.Delimiter != 0 {
 		reader.Comma = config.Delimiter
 	}
+	// Allow rows with different field counts (e.g. trailing comma in header).
+	reader.FieldsPerRecord = -1
 
 	records, err := reader.ReadAll()
 	if err != nil {

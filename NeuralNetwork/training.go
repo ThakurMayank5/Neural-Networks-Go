@@ -65,6 +65,9 @@ func (model *Model) Fit(training dataset.Dataset, validation dataset.Dataset) er
 				return err
 			}
 
+			// Show progress bar
+			ShowProgress(batch+1, batchesPerEpoch)
+
 		}
 		// Validation per epoch
 
@@ -72,10 +75,29 @@ func (model *Model) Fit(training dataset.Dataset, validation dataset.Dataset) er
 		if err != nil {
 			return err
 		}
-		fmt.Printf("Validation Loss: %.4f\n", validationLoss)
+		fmt.Printf("\nValidation Loss: %.4f\n", validationLoss)
 
 	}
 
 	return nil
+
+}
+
+func ShowProgress(done, total int) {
+	percent := float64(done) / float64(total) * 100
+	fmt.Printf("\rProgress: %d/%d (%.2f%%)[", done, total, percent)
+
+	number := 20 // Total number of characters in the progress bar
+
+	filled := int(percent / 100 * float64(number))
+	for i := 0; i < number; i++ {
+		if i < filled {
+			fmt.Print("#")
+		} else {
+			fmt.Print("-")
+		}
+	}
+
+	fmt.Print("]")
 
 }

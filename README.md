@@ -1,8 +1,8 @@
+[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/) ![GitHub contributors](https://img.shields.io/github/contributors/ThakurMayank5/gonn) ![GitHub Release Date](https://img.shields.io/github/release-date/ThakurMayank5/gonn) ![GitHub language count](https://img.shields.io/github/languages/count/ThakurMayank5/gonn) ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/ThakurMayank5/gonn/total) ![GitHub Release](https://img.shields.io/github/v/release/ThakurMayank5/gonn) ![GitHub Tag](https://img.shields.io/github/v/tag/ThakurMayank5/gonn)
+
 # gonn — Neural Networks in Go
 
 A general-purpose feedforward neural network framework built from scratch in Go. No ML libraries, no external dependencies — just pure Go.
-
-> Wanna Know why? because I was bored.
 
 ---
 

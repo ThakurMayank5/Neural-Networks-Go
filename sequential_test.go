@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	imageprocessing "github.com/ThakurMayank5/gonn/image-processing"
 	"github.com/ThakurMayank5/gonn/tensor"
 )
 
@@ -34,7 +35,7 @@ func TestSequentialMLPModel(t *testing.T) {
 
 func TestSequentialCNNModel(t *testing.T) {
 
-	fmt.Println("Starting Conculation Neural Network Test")
+	fmt.Println("Starting Convolution Neural Network Test")
 
 	model := Sequential(
 		Input([]int{3, 28, 28}),
@@ -54,11 +55,19 @@ func TestSequentialCNNModel(t *testing.T) {
 
 	model.Summary()
 
-	model.Predict(
-		tensor.Tensor{
-			Data:  make([]float64, 3*28*28), // Example input data (3 channels, 28x28 image)
-			Shape: []int{3, 28, 28},
-		},
+	imageData, err := imageprocessing.LoadImage("test-images\\images.jpg")
+	if err != nil {
+		t.Fatalf("Error loading image: %v", err)
+	}
+
+	// fmt.Printf("Loaded image data with shape: [%d, %d, %d]\n", len(imageData), len(imageData[0]), len(imageData[0][0]))
+
+	// fmt.Printf("Image data: %v\n", imageData)
+
+	pred := model.Predict(
+		*tensor.NewTensorFrom3D(imageData),
 	)
+
+	fmt.Printf("Model output: %v\n", pred.Data)
 
 }

@@ -24,6 +24,10 @@ type Conv2DLayer struct {
 
 func (conv *Conv2DLayer) Forward(input tensor.Tensor) tensor.Tensor {
 
+	if len(input.Shape) != 3 {
+		panic("Conv2D expects [C,H,W]")
+	}
+
 	// H_out = (H_in + 2*padding - K_h) / stride + 1
 	// W_out = (W_in + 2*padding - K_w) / stride + 1
 

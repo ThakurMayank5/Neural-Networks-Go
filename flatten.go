@@ -6,7 +6,6 @@ type FlattenLayer struct {
 	InputShape []int
 }
 
-// TODO: REVISE THIS LATER
 func (f *FlattenLayer) Forward(input tensor.Tensor) tensor.Tensor {
 
 	// Create a new tensor with the flattened shape

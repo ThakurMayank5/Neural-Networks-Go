@@ -24,6 +24,8 @@ func (model *Model) Build(inputShape []int) {
 
 			inputShape = []int{outputSize}
 
+			fmt.Printf("Building Flatten Layer with input shape %v and output shape %v\n", layer.InputShape, inputShape)
+
 		case *Conv2DLayer:
 
 			fmt.Println("The input shape is ", inputShape)
@@ -43,22 +45,56 @@ func (model *Model) Build(inputShape []int) {
 
 			inputShape = []int{layer.Filters, hOut, wOut}
 
+			fmt.Printf(" Conv2D Layer built successfully with weights shape %v and bias shape %v\n", layer.Weights.Shape, layer.Biases.Shape)
+
+			fmt.Printf(" Conv2D output shape will be %v\n", inputShape)
+
 		case *DenseLayer:
 
-			fmt.Println("The input shape is ", inputShape)
+			// fmt.Println("The input shape is ", inputShape)
 
-			fmt.Printf("Building Dense Layer with %d neurons\n", layer.Neurons)
+			// fmt.Printf("Building Dense Layer with %d neurons\n", layer.Neurons)
 
 			denseLayer := layer
 
 			denseLayer.Weights.Shape = []int{denseLayer.Neurons, inputShape[0]}
 			denseLayer.Bias.Shape = []int{denseLayer.Neurons}
 
-			fmt.Printf(" Weights shape: %v, Bias shape: %v\n", denseLayer.Weights.Shape, denseLayer.Bias.Shape)
+			// fmt.Printf(" Weights shape: %v, Bias shape: %v\n", denseLayer.Weights.Shape, denseLayer.Bias.Shape)
 
 			inputShape = []int{denseLayer.Neurons}
 
 			fmt.Println(" Dense Layer built successfully")
+
+			fmt.Printf(" Dense Layer output shape will be %v\n", inputShape)
+
+		case *MaxPool2DLayer:
+
+			fmt.Println("The input shape is ", inputShape)
+
+			h := inputShape[1]
+			w := inputShape[2]
+
+			hOut := (h+2*layer.Padding-layer.PoolSize)/layer.Stride + 1
+			wOut := (w+2*layer.Padding-layer.PoolSize)/layer.Stride + 1
+			inputShape = []int{inputShape[0], hOut, wOut}
+
+			fmt.Printf(" MaxPool2D Layer built successfully with pool size %d and stride %d\n", layer.PoolSize, layer.Stride)
+			fmt.Printf(" MaxPool2D output shape will be %v\n", inputShape)
+
+		case *AvgPool2DLayer:
+
+			fmt.Println("The input shape is ", inputShape)
+
+			h := inputShape[1]
+			w := inputShape[2]
+
+			hOut := (h+2*layer.Padding-layer.PoolSize)/layer.Stride + 1
+			wOut := (w+2*layer.Padding-layer.PoolSize)/layer.Stride + 1
+			inputShape = []int{inputShape[0], hOut, wOut}
+
+			fmt.Printf(" AvgPool2D Layer built successfully with pool size %d and stride %d\n", layer.PoolSize, layer.Stride)
+			fmt.Printf(" AvgPool2D output shape will be %v\n", inputShape)
 
 		default:
 			fmt.Printf("No Parameter Layer found : %T\n", layer)
